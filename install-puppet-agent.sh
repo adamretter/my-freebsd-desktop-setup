@@ -4,26 +4,42 @@ set -e
 
 PUPPET_VER=8
 PUPPET_BIN=/opt/puppetlabs/bin/puppet
-
 PUPPET_INSTALLED=false
 
 # FreeBSD Ports
 if [[ "$(uname)" == 'FreeBSD' ]]; then
-	pkg info puppet$PUPPET_VER > /dev/null && pkg_exit_code=$? || pkg_exit_code=$? ; true
-	if [[ ${pkg_exit_code} -ne 0 ]]; then
+	pkg info puppet$PUPPET_VER > /dev/null && pkg_puppet_exit_code=$? || pkg_puppet_exit_code=$? ; true
+	if [[ ${pkg_puppet_exit_code} -ne 0 ]]; then
 		# Puppet is not installed
+
+		# Are port-maintenance-tools installed?
+		pkg info port-maintenance-tools > /dev/null && pkg_pmt_exit_code=$? || pkg_pmt_exit_code=$? ; true
+
 		if [ -d "/usr/ports/sysutils/puppet$PUPPET_VER" ]; then
 			# If ports are present, install from ports
 			pushd /usr/ports/sysutils/puppet$PUPPET_VER
 			BATCH=yes make install clean
 			popd
+
+			# install port-maintenance-tools
+			if [[ ${pkg_pmt_exit_code} -ne 0 ]]; then
+				# install port-maintenance-tools
+				pushd /usr/ports/ports-mgmt/port-maintenance-tools
+				BATCH=yes make install clean
+				popd
+			fi
 		else
 			# Else, install from pkg
 			pkg install -y puppet$PUPPET_VER
+
+			if [[ ${pkg_pmt_exit_code} -ne 0 ]]; then
+				# install port-maintenance-tools
+				pkg install -y port-maintenance-tools
+			fi
 		fi
-		PUPPET_BIN=/usr/local/bin/puppet
-		PUPPET_INSTALLED=true
 	fi
+	PUPPET_BIN=/usr/local/bin/puppet
+	PUPPET_INSTALLED=true
 
 # RHEL 7 compatible
 elif [ -n "$(command -v rpm)" ]; then
@@ -51,15 +67,26 @@ fi
 
 $PUPPET_BIN module install puppetlabs-stdlib
 $PUPPET_BIN module install saz-ssh
-$PUPPET_BIN module install puppetlabs-sshkeys_core
 $PUPPET_BIN module install puppetlabs-vcsrepo
 $PUPPET_BIN module install puppetlabs-augeas_core
 $PUPPET_BIN module install puppetlabs-inifile
 
-if [ -n "$(command -v yum)" ]; then
-	$PUPPET_BIN module install puppet-yum
+if [[ "$(uname)" == 'FreeBSD' ]]; then
+	# FreeBSD specific puppet modules
+	$PUPPET_BIN module install ptomulik-portsng
+fi
 
-elif [ -n "$(command -v apt)" ]; then
-	$PUPPET_BIN module install puppetlabs-apt
+if [ -n "$(command -v yum)" ]; then
+	# RHEL specific puppet modules
+	$PUPPET_BIN module install puppet-yum
+fi
+
+if [ -n "$(command -v dpkg)" ]; then
+	# Ubuntu specific puppet modules
 	$PUPPET_BIN module install domkrm-ufw
+fi
+
+if [ -n "$(command -v apt)" ]; then
+	# Apt specific puppet modules
+	$PUPPET_BIN module install puppetlabs-apt
 fi

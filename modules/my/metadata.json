@@ -1,0 +1,27 @@
+{
+    "name": "aretter-my",
+    "version": "0.1.0",
+    "author": "aretter",
+    "summary": "Simple wrappers around various Puppet constructs",
+    "license": "proprietary",
+    "source": "https://github.com/adamretter/my-freebsd-desktop-setup",
+    "dependencies": [
+    ],
+    "operatingsystem_support": [
+      {
+        "operatingsystem": "FreeBSD",
+        "operatingsystemrelease": [
+          "14.2"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "name": "puppet",
+        "version_requirement": ">= 7.0.0"
+      }
+    ],
+    "pdk-version": "2.5.0",
+    "template-url": "pdk-default#2.5.0",
+    "template-ref": "tags/2.5.0-0-g369d483"
+  }
